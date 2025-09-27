@@ -1,20 +1,24 @@
-import { TextSymbol } from "../common/enums";
-import { IGreekCharacterNode, IToken } from "../common/interfaces";
-import ParserBase from "../common/parser";
-import { ParsingResult } from "../common/parser.types";
+import { TextSymbol } from "../../common/enums";
+import { IGreekCharacterNode } from "../../common/interfaces/character";
+import { IToken } from "../../common/interfaces/lexing";
+import { ParserBase, ParsingResult } from "../../common/parser";
 
-export abstract class TextParser extends ParserBase<
+/**
+ * A subclass of `ParserBase` designed to parse string text into 
+ * the `IGreekCharacterNode` intermediary representation.
+ */
+export abstract class CharacterParser extends ParserBase<
   string,
   string,
   ParsingResult<IGreekCharacterNode[]>,
   IToken
 > {
-  private text: string = "";
+  protected text: string = "";
 
   /**
    * Generate an error diagram according to the token at the current position
    * and append it to the given error message.
-   * 
+   *
    * @param errorMsg  A message about the error.
    * @returns         The original message, plus a diagram of the problem area
    */
@@ -25,7 +29,7 @@ export abstract class TextParser extends ParserBase<
 
     // Normal error case.
     if (this.currentPosition != 0) {
-      let token = this.items[this.currentPosition - 1];
+      let token = this.nodes[this.currentPosition - 1];
       tCol = token.column;
       tLine = token.line;
     }

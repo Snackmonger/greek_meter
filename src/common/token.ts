@@ -1,4 +1,4 @@
-import { IToken } from "./interfaces";
+import { IToken } from "./interfaces/lexing";
 
 /**
  * The lexical category to which a segment belongs, as well as its location

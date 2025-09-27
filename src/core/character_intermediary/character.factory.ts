@@ -1,16 +1,12 @@
-import {
-  IGreekAlphabeticChar,
-  IGreekCharacterNodeFactory,
-  IGreekEditorialSymbol,
-  IGreekPunctuation,
-  IGreekVowel,
-} from "../common/interfaces";
+
+import { IGreekCharacterNodeFactory } from "../../common/interfaces/character";
 import {
   GreekConsonantNode,
   GreekEditorialSymbolNode,
   GreekPunctuationNode,
+  GreekSpaceNode,
   GreekVowelNode,
-} from "./character.nodes";
+} from "../../core/character_intermediary/character.nodes";
 
 /**
  * Factory object to supply concrete implementations of character
@@ -21,18 +17,16 @@ export const GreekCharacterNodeFactory: IGreekCharacterNodeFactory = {
     name,
     isUppercase = false,
     hasUnderdot = false,
-  }: IGreekAlphabeticChar) => {
-    return new GreekConsonantNode(name, isUppercase, hasUnderdot);
+    annotation = {},
+  }) => {
+    return new GreekConsonantNode(name, isUppercase, hasUnderdot, annotation);
   },
 
-  GreekEditorialSymbol: ({
-    symbolType,
-    value = null,
-  }: IGreekEditorialSymbol) => {
+  GreekEditorialSymbol: ({ symbolType, value = null }) => {
     return new GreekEditorialSymbolNode(symbolType, value);
   },
 
-  GreekPunctuation: ({ punctuationType }: IGreekPunctuation) => {
+  GreekPunctuation: ({ punctuationType }) => {
     return new GreekPunctuationNode(punctuationType);
   },
 
@@ -41,16 +35,21 @@ export const GreekCharacterNodeFactory: IGreekCharacterNodeFactory = {
     accent = null,
     breathing = null,
     modifier = null,
+    lengthMark = null,
     isUppercase = false,
     hasUnderdot = false,
-  }: IGreekVowel) => {
+  }) => {
     return new GreekVowelNode(
       name,
       accent,
       breathing,
       modifier,
+      lengthMark,
       isUppercase,
       hasUnderdot
     );
+  },
+  GreekSpace: ({ token }) => {
+    return new GreekSpaceNode(token);
   },
 };

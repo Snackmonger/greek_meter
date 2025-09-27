@@ -1,11 +1,10 @@
 import { UnexpectedCharacterError } from "./errors";
 import { TextSymbol } from "./enums";
-import { ILexer, IToken } from "./interfaces";
-
+import { ILexer, IToken } from "./interfaces/lexing";
 /**
  * A template for token type pattern matches.
  */
-type TokenTemplate = {
+export type TokenTemplate = {
   tokenType: string;
   regexPattern: RegExp;
   callback?: (lexeme: string) => any;
@@ -14,7 +13,7 @@ type TokenTemplate = {
 /**
  * An object that returns an instance of an implementation of `IToken`
  */
-type TokenConstructor<T extends IToken = IToken> = new (
+export type TokenConstructor<T extends IToken = IToken> = new (
   tokenType: string,
   lexeme: string,
   start: number,
@@ -46,13 +45,13 @@ type TokenConstructor<T extends IToken = IToken> = new (
  * `tokenize` method in order to exclude them from the final result.
  */
 export default class Lexer implements ILexer {
-  private templates: TokenTemplate[] = [];
-  private tokens: IToken[] = [];
-  private tokenType: TokenConstructor;
+  protected templates: TokenTemplate[] = [];
+  protected tokens: IToken[] = [];
+  protected tokenType: TokenConstructor;
 
-  private _start: number = 0;
-  private _line: number = 1;
-  private _column: number = 1;
+  protected _start: number = 0;
+  protected _line: number = 0;
+  protected _column: number = 0;
 
   constructor(tokenType: TokenConstructor) {
     this.tokenType = tokenType;
@@ -97,16 +96,13 @@ export default class Lexer implements ILexer {
     this.tokens = [];
     let best: IToken | null;
     let token: IToken | null;
+    this._start = 0;
+    this._column = 0;
+    this._line = 0;
     while (this.start < text.length) {
       best = null;
       for (let template of this.templates) {
-        token = this.match(
-          template,
-          text,
-          this.start,
-          this.line,
-          this.column
-        );
+        token = this.match(template, text);
         if (token == null) {
           continue;
         }
@@ -139,14 +135,10 @@ export default class Lexer implements ILexer {
    *
    * @returns         A new token if the match was made or null if not.
    */
-  public match(
-    template: TokenTemplate,
-    text: string,
-    start: number,
-    line: number,
-    column: number
-  ): IToken | null {
-    let match = text.slice(start).match(template.regexPattern);
+  public match(template: TokenTemplate, text: string): IToken | null {
+    let line = this._line;
+    let column = this._column;
+    let match = text.slice(this._start).match(template.regexPattern);
     if (!match) {
       return null;
     }
@@ -155,18 +147,20 @@ export default class Lexer implements ILexer {
     }
 
     let lexeme = match[0];
-    let end = start + lexeme.length;
+    let end = this.start + lexeme.length;
     for (let char of lexeme) {
       if (char == TextSymbol.NEWLINE) {
         line += 1;
-        column = 1;
+        column = 0;
+      } else {
+        column += 1;
       }
     }
 
     let token = new this.tokenType(
       template.tokenType,
       lexeme,
-      start,
+      this.start,
       end,
       line,
       column
@@ -198,10 +192,10 @@ export default class Lexer implements ILexer {
    *
    * @param token     The token to be accepted.
    */
-  private accept(token: IToken) {
+  protected accept(token: IToken) {
     this.tokens.push(token);
     if (token.line != this.line) {
-      this._column = 1;
+      this._column = 0;
     } else {
       this._column += token.end - token.start;
     }

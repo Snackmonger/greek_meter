@@ -1,6 +1,6 @@
-import { TokenType } from "../../common/enums";
-import Lexer from "../../common/lexer";
-import Token from "../../common/token";
+import { TokenType } from "../../../common/enums";
+import Lexer from "../../../common/lexer";
+import Token from "../../../common/token";
 
 export let TlgBetacodeLexer = new Lexer(Token)
   // Alphabetic
@@ -64,12 +64,14 @@ export let TlgBetacodeLexer = new Lexer(Token)
   .addRule(TokenType.OPEN_TEXT_FORMATTING, /[<]/)
   .addRule(TokenType.CLOSE_TEXT_FORMATTING, /[>]/)
   .addRule(TokenType.QUOTATION_MARK, /["]/)
-  .addRule(TokenType.MARKUP, /[{]/)
+  .addRule(TokenType.OPEN_BRACE, /[{]/)
+  .addRule(TokenType.CLOSE_BRACE, /[}]/)
   .addRule(TokenType.GREEK_STYLE, /[$]/)
   .addRule(TokenType.LATIN_STYLE, /[&]/)
+  .addRule(TokenType.TLG_CITATION, /~[^\s]*/)
 
   // Misc.
   .addRule(TokenType.WHITESPACE, /[ ]/)
   .addRule(TokenType.TAB, /[\t]/)
   .addRule(TokenType.NEWLINE, /[\n]/)
-  .addRule(TokenType.DIGIT, /\d*/, (x: string) => +x);
+  .addRule(TokenType.DIGIT, /\d+/, (x: string) => +x);

@@ -1,12 +1,12 @@
 import {
-  IGreekAlphabeticChar,
+  IGreekAlphabeticData,
   IGreekCharacterNode,
   IGreekCharacterNodeVisitor,
-  IGreekEditorialSymbol,
-  IGreekPunctuation,
-  IGreekSpaceChar,
-  IGreekVowel,
-} from "../../../common/interfaces";
+  IGreekEditorialSymbolData,
+  IGreekPunctuationData,
+  IGreekSpaceData,
+  IGreekVowelData,
+} from "../../../common/interfaces/prosody";
 
 /**
  * Convert character intermediary nodes into Unicode Greek characters 
@@ -14,18 +14,18 @@ import {
  */
 export class CombiningUnicodeVisitor implements IGreekCharacterNodeVisitor {
   public visitGreekVowel(
-    node: IGreekVowel & IGreekCharacterNode
+    node: IGreekVowelData & IGreekCharacterNode
   ): string {}
   public visitGreekConsonant(
-    node: IGreekAlphabeticChar & IGreekCharacterNode
+    node: IGreekAlphabeticData & IGreekCharacterNode
   ): string {}
   public visitGreekPunctuation(
-    node: IGreekPunctuation & IGreekCharacterNode
+    node: IGreekPunctuationData & IGreekCharacterNode
   ): string {}
   public visitGreekEditorialSymbol(
-    node: IGreekEditorialSymbol & IGreekCharacterNode
+    node: IGreekEditorialSymbolData & IGreekCharacterNode
   ): string {}
   public visitGreekSpace(
-    node: IGreekSpaceChar & IGreekCharacterNode
+    node: IGreekSpaceData & IGreekCharacterNode
   ): string {}
 }

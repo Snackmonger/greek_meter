@@ -1,14 +1,18 @@
+export type ParsingResult<T> =
+  | { input: string; ok: true, ast: T }
+  | { input: string; ok: false, error: string[] };
+
 /**
  * A generic base class for a parser.
  *
- * P is the input, e.g. a string of text to be parsed
- * Q is an identifier by which a category of T is recognized, e.g. a token type
- * R is the result of the parse, e.g. an abstract syntax tree
- * T is the parse node, e.g. a lexical token
+ * Input is the input, e.g. a string of text to be parsed
+ * Identifier is an identifier by which a category of T is recognized, e.g. a token type
+ * Return is the result of the parse, e.g. an abstract syntax tree
+ * ParseNode is the parse node, e.g. a lexical token
  */
-export default abstract class ParserBase<P, Q, R, T> {
+export abstract class ParserBase<Input, Identifier, Return, ParseNode> {
   protected currentPosition: number = 0;
-  protected items: T[] = [];
+  protected nodes: ParseNode[] = [];
   protected errors: string[] = [];
 
   /**
@@ -17,24 +21,24 @@ export default abstract class ParserBase<P, Q, R, T> {
    * call the top level rule from the `parse` method, but this is not strictly
    * necessary, and all behaviour can be stuffed in this method if you want.
    *
-   * @param input The input to be parsed and returned as a `ParsingResult` AST.
-   * @returns A parsing result representing the AST of the input.
+   * @param input The `Input` input to be parsed.
+   * @returns     A parsing `Return` representing the AST of the input.
    */
-  public abstract parse(input: P): R;
+  public abstract parse(input: Input): Return;
 
   /**
    * This method will be implemented by subclasses to provide a means by which
-   * the parser can check whether the item `T` at the current position can be
-   * identified by identifier `Q`
+   * the parser can check whether the item `ParseNode` at the current position 
+   * can be identified by identifier `Identifier`
    *
-   * @param identifier  A means by which the item `T` can be identified.
+   * @param identifier  A means by which the item `ParseNode` can be identified.
    */
-  protected abstract check(identifier: Q): boolean;
+  protected abstract check(identifier: Identifier): boolean;
 
   /**
    * This method will be implemented by subclasses to provide an error message
-   * when the parser fails to `consume` an item `T`, using appropriate data
-   * from `T`
+   * when the parser fails to `consume` an item `ParseNode`, using appropriate data
+   * from `ParseNode`
    *
    * @param errorMsg    A description of the error, to which this method will
    *                    add specific item data to complete the message.
@@ -46,54 +50,57 @@ export default abstract class ParserBase<P, Q, R, T> {
    */
   public reset(): void {
     this.currentPosition = 0;
-    this.items = [];
+    this.nodes = [];
     this.errors = [];
   }
 
   /**
-   * Indicate whether the parser has reached the end of the tokens.
+   * Indicate whether the parser has reached the end of the node streams.
    *
-   * @returns True, if the parser has reached the end of the token stream.
+   * @returns True, if the parser has reached the end of the node stream.
    */
   protected isAtEnd(): boolean {
-    return this.currentPosition >= this.items.length;
+    return this.currentPosition >= this.nodes.length;
   }
 
   /**
-   * Look at the token that is (+/-) n tokens from the current index.
+   * Look at the parse node that is (+/-) n nodes from the current index.
    *
-   * @param tokens The number of tokens ahead of the current index to check.
+   * @param nodes The number of nodes ahead of the current index to check.
    *
-   * @returns A token, if one is found at the requested position, or null if not.
+   * @returns A node, if one is found at the requested position, or null if not.
    */
-  protected lookAround(tokens: number): T | null {
-    let pos = this.currentPosition + tokens;
-    if (pos < 0 || pos >= this.items.length) {
+  protected lookAround(nodes: number): ParseNode | null {
+    let pos = this.currentPosition + nodes;
+    if (pos < 0 || pos >= this.nodes.length) {
       return null;
     }
-    return this.items[pos];
+    return this.nodes[pos];
   }
 
   /**
-   * Return the current token and move the counter ahead by one token.
+   * Return the current node and move the counter ahead by one node.
    *
-   * @returns The token at the previously-current position.
+   * @returns The node at the previously-current position.
    */
-  protected advance(): T {
-    let token = this.items[this.currentPosition];
+  protected advance(): ParseNode {
+    let node = this.nodes[this.currentPosition];
     this.currentPosition += 1;
-    return token;
+    return node;
   }
 
   /**
-   * Asssert that the next token is of the given type, advance the counter,
-   * and return the token, or log the given error if the assertion fails.
+   * Asssert that the next node is of the given type, advance the counter,
+   * and return the node, or log the given error if the assertion fails.
    *
    * @param identifier
    * @param errorMessage
    * @returns
    */
-  protected consume(identifier: Q, errorMessage: string): T | null {
+  protected consume(
+    identifier: Identifier,
+    errorMessage: string
+  ): ParseNode | null {
     // Success path.
     if (this.check(identifier)) {
       return this.advance();
@@ -112,33 +119,47 @@ export default abstract class ParserBase<P, Q, R, T> {
   }
 
   /**
-   * Return the single token at the position before the current position,
+   * Return the single node at the position before the current position,
    * or null if there is none.
    *
-   * @returns A token, if there is one, or null if not.
+   * @returns A node, if there is one, or null if not.
    */
-  protected previous(): T | null {
+  protected previous(): ParseNode | null {
     return this.lookAround(-1);
   }
 
   /**
-   * Return the token at the current position, or null if there is none.
+   * Return the node at the current position, or null if there is none.
    *
-   * @returns A token, if there is one, or null if not.
+   * @returns A node, if there is one, or null if not.
    */
-  protected current(): T | null {
+  protected current(): ParseNode | null {
     return this.lookAround(0);
   }
 
-  protected peek(): T | null {
+  /**
+   * Return the node at counter +1 or null if none exists.
+   * @returns
+   */
+  protected peek(): ParseNode | null {
     return this.lookAround(1);
   }
 
-  protected peekNext(): T | null {
+  /**
+   * Return the node at counter +2 or null if none exists.
+   * @returns
+   */
+  protected peekNext(): ParseNode | null {
     return this.lookAround(2);
   }
 
-  protected match(...identifiers: Q[]): boolean {
+  /**
+   * Check whether the given identifier is found at the current position;
+   * if so, return true and advance the counter.
+   * @param identifiers   The identifier (e.g. token type) to check.
+   * @returns   True, if the item at current position has identifier.
+   */
+  protected match(...identifiers: Identifier[]): boolean {
     for (let identifier of identifiers) {
       if (this.check(identifier)) {
         this.advance();
@@ -148,6 +169,10 @@ export default abstract class ParserBase<P, Q, R, T> {
     return false;
   }
 
+  /**
+   * Register an error with the error log.
+   * @param message   The message thar accompanies the error.
+   */
   protected addError(message: string) {
     this.errors.push(message);
   }

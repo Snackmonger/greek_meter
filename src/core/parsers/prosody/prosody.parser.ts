@@ -1,4 +1,4 @@
-import { IGreekCharacterNode, IGreekProsodyNodeFactory } from "../../common/interfaces";
+import { IGreekCharacterNode, IGreekProsodyNodeFactory } from "../../../common/interfaces/prosody";
 import { GreekLineNode } from "../../interpreters/prosody/prosody.nodes";
 
 export default class ProsodyParser {

@@ -1,8 +1,8 @@
-import { TokenType } from "../../common/enums";
-import Lexer from "../../common/lexer";
-import Token from "../../common/token";
+import { TokenType } from "../../../common/enums";
+import Lexer from "../../../common/lexer";
+import Token from "../../../common/token";
 
-export let TlgBetacodeLexer = new Lexer(Token)
+export let TypeGreekBetacodeLexer = new Lexer(Token)
   // Alphabetic
   .addRule(TokenType.ALPHA, /a/i)
   .addRule(TokenType.BETA, /b/i)

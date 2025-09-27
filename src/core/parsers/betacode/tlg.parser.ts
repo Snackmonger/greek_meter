@@ -1,23 +1,24 @@
-import { TlgBetacodeLexer } from "./tlg.lexer";
-import { TokenType } from "../../common/enums";
+import { TokenType } from "../../../common/enums";
 import {
-  IGreekAlphabeticChar,
+  IGreekAlphabeticNode,
   IGreekCharacterNode,
   IGreekCharacterNodeFactory,
-  IGreekEditorialSymbol,
-  IGreekPunctuation,
-  IGreekVowel,
-  IToken,
-} from "../../common/interfaces";
-import { TextParser } from "../text_parser";
-import { ParsingResult } from "../../common/parser.types";
+  IGreekEditorialNode,
+  IGreekPunctuationNode,
+  IGreekSpaceNode,
+  IGreekVowelNode,
+} from "../../../common/interfaces/character";
+import { IToken } from "../../../common/interfaces/lexing";
+import { ParsingResult } from "../../../common/parser";
+import { CharacterParser } from "../character_parser";
+import { TlgBetacodeLexer } from "./tlg.lexer";
 
 /**
  * Parser-transformer that accepts the 'strict' form of beta code as used
  * by TLG and outputs a simple syntax tree representing the characters.
  */
-export class TlgBetacodeParser extends TextParser {
-  private astNodeFactory: IGreekCharacterNodeFactory;
+export class TlgBetacodeParser extends CharacterParser {
+  protected astNodeFactory: IGreekCharacterNodeFactory;
 
   /**
    * Initialize the parser.
@@ -34,11 +35,13 @@ export class TlgBetacodeParser extends TextParser {
    * Parse a text in the TLG beta code formatting and return an AST
    * representing the Greek characters.
    *
-   * @param text
-   * @returns
+   * @param text    Text in the TLG beta code formatting
+   * @returns       A character node AST representing the text.
    */
   public parse(text: string): ParsingResult<IGreekCharacterNode[]> {
-    this.items = TlgBetacodeLexer.tokenize(text);
+    this.reset();
+    this.nodes = TlgBetacodeLexer.tokenize(text);
+    this.text = text;
     let characters: IGreekCharacterNode[] = [];
     let element: IGreekCharacterNode | null;
 
@@ -52,9 +55,9 @@ export class TlgBetacodeParser extends TextParser {
       }
     }
     if (this.hadError()) {
-      return { input: text, error: this.errors };
+      return { input: text, ok: false, error: this.errors };
     }
-    return { input: text, ast: characters };
+    return { input: text, ok: true, ast: characters };
   }
 
   /**
@@ -64,7 +67,7 @@ export class TlgBetacodeParser extends TextParser {
    * @returns A syntax element, expressed as an concrete implementation
    * of `IGreekCharacterNode`
    */
-  private parseElement(): IGreekCharacterNode | null {
+  protected parseElement(): IGreekCharacterNode | null {
     if (this.match(TokenType.UPPERCASE)) {
       return this.parseUppercase();
     }
@@ -73,6 +76,9 @@ export class TlgBetacodeParser extends TextParser {
     }
     if (this.matchEditorial()) {
       return this.parseEditorialSymbol();
+    }
+    if (this.match(TokenType.WHITESPACE, TokenType.TAB, TokenType.NEWLINE)) {
+      return this.parseWhitespace();
     }
     // Text was tokenized but hasn't matched by now; can only be lowercase.
     return this.parseLowercase();
@@ -84,17 +90,37 @@ export class TlgBetacodeParser extends TextParser {
    * @param isUppercase Flag whether to mark the consonant as uppercase.
    * @returns           A node representing a consonant.
    */
-  private parseConsonant(
-    isUppercase: boolean
-  ): IGreekAlphabeticChar & IGreekCharacterNode {
+  protected parseConsonant(
+    isUppercase: boolean,
+    annotation?: object
+  ): IGreekAlphabeticNode {
     let hasUnderdot = false;
+    let consonant = this.previous()!;
+
+    // If this method was called on an uppercase rho, it already has
+    // a breathing annotation and doesn't need to be checked here.
+    if (consonant.tokenType === TokenType.RHO && !isUppercase) {
+      this.match(TokenType.SMOOTH, TokenType.ROUGH);
+      annotation = { breathing: this.previous() };
+    }
+
+    // Normally sigma is just converted based on position, but it can accept
+    // a trailing digit to control its appearance.
+    if (consonant!.tokenType === TokenType.SIGMA) {
+      if (this.match(TokenType.DIGIT)) {
+        annotation = { digit: this.previous() };
+      }
+    }
+
     if (this.match(TokenType.UNDERDOT)) {
       hasUnderdot = true;
     }
+
     return this.astNodeFactory.GreekConsonant({
-      name: this.previous()!,
+      name: consonant,
       isUppercase: isUppercase,
       hasUnderdot: hasUnderdot,
+      annotation: annotation,
     });
   }
 
@@ -104,10 +130,7 @@ export class TlgBetacodeParser extends TextParser {
    * @returns A character node for a lowercase letter, or null if none
    * can be parsed at the current position.
    */
-  private parseLowercase():
-    | (IGreekVowel & IGreekCharacterNode)
-    | (IGreekAlphabeticChar & IGreekCharacterNode)
-    | null {
+  protected parseLowercase(): IGreekVowelNode | IGreekAlphabeticNode | null {
     if (this.matchConsonant()) {
       return this.parseConsonant(false);
     }
@@ -145,7 +168,7 @@ export class TlgBetacodeParser extends TextParser {
       accent: accent,
       breathing: breathing,
       modifier: modifier,
-      isUppercase: true,
+      isUppercase: false,
       hasUnderdot: hasUnderdot,
     });
   }
@@ -156,36 +179,33 @@ export class TlgBetacodeParser extends TextParser {
    * @returns A node representing an uppercase vowel or consonant,
    * or null, if none can be parsed at the current position.
    */
-  private parseUppercase():
-    | (IGreekVowel & IGreekCharacterNode)
-    | (IGreekAlphabeticChar & IGreekCharacterNode)
-    | null {
+  protected parseUppercase(): IGreekVowelNode | IGreekAlphabeticNode | null {
     if (this.matchConsonant()) {
       return this.parseConsonant(true);
     }
-
+    let vowel: IToken | null = null;
     let accent: IToken | null = null;
-    let vowel: IToken;
     let breathing: IToken | null = null;
     let modifier: IToken | null = null;
     let hasUnderdot = false;
 
     if (this.match(TokenType.ROUGH, TokenType.SMOOTH)) {
       breathing = this.previous();
+
+      // Rho is the only consonant that might take a diacritic.
+      if (this.match(TokenType.RHO)) {
+        return this.parseConsonant(true, { breathing: breathing });
+      }
     }
 
     if (this.match(TokenType.ACUTE, TokenType.GRAVE, TokenType.CIRCUMFLEX)) {
       accent = this.previous();
     }
-
     if (!this.matchVowel()) {
-      // Consume a dummy value. This will generate the error message at the
-      // current position.
       this.consume(TokenType.ALPHA, "Expected a vowel");
-      return null;
+      return null
     }
     vowel = this.previous()!;
-
     if (this.match(TokenType.DIAERESIS, TokenType.SUBSCRIPT)) {
       modifier = this.previous();
     }
@@ -208,12 +228,16 @@ export class TlgBetacodeParser extends TextParser {
    *
    * @returns A node representing an editorial symbol.
    */
-  private parseEditorialSymbol(): IGreekEditorialSymbol & IGreekCharacterNode {
-    let data: IGreekEditorialSymbol = { symbolType: this.previous()! };
+  protected parseEditorialSymbol(): IGreekEditorialNode {
+    let symbolType = this.previous()!;
+    let value: number | null = null;
     if (this.match(TokenType.DIGIT)) {
-      data.value = this.previous()!.value as number;
+      value = this.previous()!.value as number;
     }
-    return this.astNodeFactory.GreekEditorialSymbol(data);
+    return this.astNodeFactory.GreekEditorialSymbol({
+      symbolType: symbolType,
+      value: value,
+    });
   }
 
   /**
@@ -221,13 +245,24 @@ export class TlgBetacodeParser extends TextParser {
    *
    * @returns A node representing a punctuation symbol.
    */
-  private parsePunctuation(): IGreekPunctuation & IGreekCharacterNode {
+  protected parseWhitespace(): IGreekSpaceNode {
+    return this.astNodeFactory.GreekSpace({
+      token: this.previous()!,
+    });
+  }
+
+  /**
+   * Parse a punctuation symbol.
+   *
+   * @returns A node representing a punctuation symbol.
+   */
+  protected parsePunctuation(): IGreekPunctuationNode {
     return this.astNodeFactory.GreekPunctuation({
       punctuationType: this.previous()!,
     });
   }
 
-  private matchVowel(): boolean {
+  protected matchVowel(): boolean {
     return this.match(
       TokenType.ALPHA,
       TokenType.EPSILON,
@@ -239,7 +274,7 @@ export class TlgBetacodeParser extends TextParser {
     );
   }
 
-  private matchConsonant(): boolean {
+  protected matchConsonant(): boolean {
     return this.match(
       TokenType.BETA,
       TokenType.GAMMA,
@@ -262,7 +297,7 @@ export class TlgBetacodeParser extends TextParser {
     );
   }
 
-  private matchPunctuation(): boolean {
+  protected matchPunctuation(): boolean {
     return this.match(
       TokenType.COMMA,
       TokenType.PERIOD,
@@ -275,7 +310,7 @@ export class TlgBetacodeParser extends TextParser {
     );
   }
 
-  private matchEditorial(): boolean {
+  protected matchEditorial(): boolean {
     return this.match(
       TokenType.OPEN_BRACKET,
       TokenType.CLOSE_BRACKET,
@@ -285,7 +320,8 @@ export class TlgBetacodeParser extends TextParser {
       TokenType.ADDITIONAL_PUNCTUATION,
       TokenType.ADDITIONAL_CHARACTER,
       TokenType.QUOTATION_MARK,
-      TokenType.MARKUP,
+      TokenType.OPEN_BRACE,
+      TokenType.CLOSE_BRACE,
       TokenType.GREEK_STYLE,
       TokenType.LATIN_STYLE
     );

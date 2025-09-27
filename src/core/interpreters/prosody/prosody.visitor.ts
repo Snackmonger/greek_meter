@@ -1,21 +1,21 @@
 import {
-  IGreekLine,
+  IGreekLineData,
   IGreekProsodyNode,
   IGreekProsodyNodeVisitor,
-  IGreekSyllable,
-  IGreekWord,
-} from "../../../common/interfaces";
+  IGreekSyllableData,
+  IGreekWordData,
+} from "../../../common/interfaces/prosody";
 
 export class GreekMetricalVisitor implements IGreekProsodyNodeVisitor {
-  visitGreekLine(node: IGreekProsodyNode & IGreekLine): any {
+  visitGreekLine(node: IGreekProsodyNode & IGreekLineData): any {
     // Analyze how syllables at the end of words are affected by syllables
     // at the beginning of the following word
   }
-  visitGreekWord(node: IGreekProsodyNode & IGreekWord): any {
+  visitGreekWord(node: IGreekProsodyNode & IGreekWordData): any {
     // Analyze how syllables are affected by following syllables
     // in the same word
   }
-  visitGreekSyllable(node: IGreekProsodyNode & IGreekSyllable): any {
+  visitGreekSyllable(node: IGreekProsodyNode & IGreekSyllableData): any {
     // Analyze the surface length of the syllable
   }
 }

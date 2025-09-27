@@ -1,32 +1,31 @@
+import { IGreekAlphabeticData, IGreekVowelData } from "../../../common/interfaces/character";
 import {
-  IGreekAlphabeticChar,
-  IGreekLine,
+  IGreekLineData,
   IGreekProsodyNode,
   IGreekProsodyNodeVisitor,
-  IGreekSyllable,
-  IGreekVowel,
-  IGreekWord,
-} from "../../../common/interfaces";
+  IGreekSyllableData,
+  IGreekWordData,
+} from "../../../common/interfaces/prosody";
 
-export class GreekSyllableNode implements IGreekProsodyNode, IGreekSyllable {
+export class GreekSyllableNode implements IGreekProsodyNode, IGreekSyllableData {
   constructor(
-    public onset: IGreekAlphabeticChar[],
-    public nucleus: IGreekVowel,
-    public coda: IGreekAlphabeticChar[]
+    public onset: IGreekAlphabeticData[],
+    public nucleus: IGreekVowelData,
+    public coda: IGreekAlphabeticData[]
   ) {}
   public accept(visitor: IGreekProsodyNodeVisitor) {
     return visitor.visitGreekSyllable(this);
   }
 }
 
-export class GreekWordNode implements IGreekProsodyNode, IGreekWord {
+export class GreekWordNode implements IGreekProsodyNode, IGreekWordData {
   constructor(public syllables: GreekSyllableNode[]) {}
   public accept(visitor: IGreekProsodyNodeVisitor) {
     return visitor.visitGreekWord(this);
   }
 }
 
-export class GreekLineNode implements IGreekProsodyNode, IGreekLine {
+export class GreekLineNode implements IGreekProsodyNode, IGreekLineData {
   constructor(public words: GreekWordNode[]) {}
   public accept(visitor: IGreekProsodyNodeVisitor) {
     return visitor.visitGreekLine(this);

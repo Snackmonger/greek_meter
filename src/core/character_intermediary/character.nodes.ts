@@ -1,34 +1,38 @@
 import { TokenType } from "../../common/enums";
 import {
-  IGreekAlphabeticChar,
+  IGreekAlphabeticData,
   IGreekCharacterNode,
   IGreekCharacterNodeVisitor,
-  IGreekEditorialSymbol,
-  IGreekPunctuation,
-  IGreekSpaceChar,
-  IGreekVowel,
-  IToken,
-} from "../../common/interfaces";
+  IGreekEditorialSymbolData,
+  IGreekPunctuationData,
+  IGreekSpaceData,
+  IGreekVowelData,
+  IGreekVowelNode,
+} from "../../common/interfaces/character";
+import { IToken } from "../../common/interfaces/lexing";
 
 /**
  * A Greek consonant glyph; either a single character, or a character plus
  * underdot.
  */
 export class GreekConsonantNode
-  implements IGreekCharacterNode, IGreekAlphabeticChar
+  implements IGreekCharacterNode, IGreekAlphabeticData
 {
   public name: IToken;
   public isUppercase: boolean;
   public hasUnderdot: boolean;
+  public annotation: object;
 
   constructor(
     name: IToken,
     isUppercase: boolean = false,
-    hasUnderdot: boolean = false
+    hasUnderdot: boolean = false,
+    annotation: object = {}
   ) {
     this.name = name;
     this.isUppercase = isUppercase;
     this.hasUnderdot = hasUnderdot;
+    this.annotation = annotation;
   }
 
   public accept(visitor: IGreekCharacterNodeVisitor) {
@@ -36,9 +40,8 @@ export class GreekConsonantNode
   }
 }
 
-
 export class GreekEditorialSymbolNode
-  implements IGreekCharacterNode, IGreekEditorialSymbol
+  implements IGreekCharacterNode, IGreekEditorialSymbolData
 {
   public symbolType: IToken;
   public value: number | null;
@@ -53,13 +56,12 @@ export class GreekEditorialSymbolNode
   }
 }
 
-
 /**
  * A Greek consonant glyph; either a single character, or a character plus
  * underdot.
  */
 export class GreekPunctuationNode
-  implements IGreekCharacterNode, IGreekPunctuation
+  implements IGreekCharacterNode, IGreekPunctuationData
 {
   public punctuationType: IToken;
 
@@ -72,7 +74,7 @@ export class GreekPunctuationNode
   }
 }
 
-export class GreekSpaceNode implements IGreekCharacterNode, IGreekSpaceChar {
+export class GreekSpaceNode implements IGreekCharacterNode, IGreekSpaceData {
   token: IToken;
 
   constructor(token: IToken) {
@@ -88,10 +90,11 @@ export class GreekSpaceNode implements IGreekCharacterNode, IGreekSpaceChar {
  * A Greek vowel glyph, which is a vowel character, possibly with
  * diacritic characters modifying it.
  */
-export class GreekVowelNode implements IGreekCharacterNode, IGreekVowel {
-  public accent: IToken| null;
-  public breathing: IToken| null;
-  public modifier: IToken| null;
+export class GreekVowelNode implements IGreekCharacterNode, IGreekVowelData {
+  public accent: IToken | null;
+  public breathing: IToken | null;
+  public modifier: IToken | null;
+  public lengthMark: IToken | null;
 
   public name: IToken;
   public isUppercase: boolean;
@@ -102,12 +105,14 @@ export class GreekVowelNode implements IGreekCharacterNode, IGreekVowel {
     accent: IToken | null = null,
     breathing: IToken | null = null,
     modifier: IToken | null = null,
+    lengthMark: IToken | null = null,
     isUppercase: boolean = false,
     hasUnderdot: boolean = false
   ) {
     this.name = name;
     this.accent = accent;
     this.breathing = breathing;
+    this.lengthMark = lengthMark;
     this.modifier = modifier;
     this.isUppercase = isUppercase;
     this.hasUnderdot = hasUnderdot;
@@ -118,7 +123,7 @@ export class GreekVowelNode implements IGreekCharacterNode, IGreekVowel {
   }
 
   /**
-   * Flag indicating whether this vowel can begin a diphthong.
+   * Flag indicating whether this vowel can hypothetically begin a diphthong.
    *
    * @returns True, if this vowel can begin a diphthong.
    */
@@ -127,8 +132,7 @@ export class GreekVowelNode implements IGreekCharacterNode, IGreekVowel {
       this.accent !== null ||
       this.modifier !== null ||
       this.breathing !== null ||
-      this.name.tokenType === TokenType.IOTA ||
-      this.name.tokenType === TokenType.OMEGA
+      this.name.tokenType === TokenType.IOTA
     ) {
       return false;
     }
@@ -136,7 +140,7 @@ export class GreekVowelNode implements IGreekCharacterNode, IGreekVowel {
   }
 
   /**
-   * Flag indicating whether this vowel can end a diphthong.
+   * Flag indicating whether this vowel can hypothetically end a diphthong.
    *
    * @returns True, if this vowel can end a diphthong.
    */
@@ -163,16 +167,49 @@ export class GreekVowelNode implements IGreekCharacterNode, IGreekVowel {
    * @param other   The vowel that follows this vowel.
    * @returns       True, if the two vowels can form a diphthong.
    */
-  public canFormDiphthong(other: GreekVowelNode): boolean {
-    // Some vowels can form diphthongs with one high vowel but not
-    // the other: ηυ pass, ηι fail, υι pass, υυ fail
+  public canFormDiphthong(other: IGreekVowelNode): boolean {
     if (
-      (this.name.tokenType === TokenType.ETA &&
-        other.name.tokenType === TokenType.IOTA) ||
-      (this.name.tokenType === TokenType.UPSILON &&
-        other.name.tokenType === TokenType.UPSILON)
+      this.name.tokenType === TokenType.UPSILON &&
+      other.name.tokenType === TokenType.UPSILON
     ) {
       return false;
+    }
+    if (this.name.tokenType === TokenType.ETA) {
+      // cf. ἀ]λλ’ οὔ πως ἤιδει Ζηνὸς νόον αἰγιόχοιο, (Hes. fr. 43a Merkelbach-West 1967)
+      // ἧις τὸ πρὶν ἠρήρησθα; νῦν δὲ δὴ πολὺς (Archil. fr. 172 West)
+      // ταῦτά μοι ἠινίχθω κεκρυμμένα τοῖσ’ ἀγαθοῖσιν· (Theog. 681)
+      // δόμους προσείλους ἦισαν, οὐ ξυλουργίαν, (A. PV. 451)
+      if (other.name.tokenType === TokenType.IOTA) {
+        if (
+          other.accent ||
+          other.breathing ||
+          other.modifier ||
+          this.modifier
+        ) {
+          return false;
+        }
+        return true;
+      }
+    } else if (this.name.tokenType === TokenType.OMEGA) {
+      // ἵπποι θ’ ἡμίονοί τε, καὶ ὧι μόνα ταῦτα πάρεστι (Solon 24)
+      // ὤικτιρε γὰρ αὐτὸν ὕδωρ (Stesichorus fr. 23 Page)
+      if (other.name.tokenType === TokenType.IOTA) {
+        return (
+          other.accent === null &&
+          other.breathing === null &&
+          other.modifier === null
+        );
+      }
+      // Very rare edge cases (ca. 175 instances in TLG)
+      // εὖτέ μιν ωὐτὸς ἀνὴρ υἱὸς Διὸς αἰγιόχοιο (Hom. Il. 5.396)
+      // ὁδὸς ἄνω κάτω μία καὶ ὡυτή (Heracl. fr. 60)
+      // παρὰ σοῦ πυθέσθαι ποῖ μ’ ἄγεις, ωὖριπίδη (Arist. Thes. 4)
+      if (other.name.tokenType === TokenType.UPSILON) {
+        if (this.accent || other.accent || this.modifier || other.modifier) {
+          return false;
+        }
+        return true;
+      }
     }
     return this.canBeginDiphthong() && other.canEndDiphthong();
   }
