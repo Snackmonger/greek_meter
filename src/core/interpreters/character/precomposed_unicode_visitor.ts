@@ -7,7 +7,7 @@ import {
   IGreekPunctuationData,
   IGreekSpaceData,
   IGreekVowelData,
-} from "../../../common/interfaces/prosody";
+} from "../../../common/interfaces/character";
 
 /**
  * Convert character intermediary nodes into Unicode Greek characters with

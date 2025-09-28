@@ -1,6 +1,3 @@
-export type ParsingResult<T> =
-  | { input: string; ok: true, ast: T }
-  | { input: string; ok: false, error: string[] };
 
 /**
  * A generic base class for a parser.
@@ -28,7 +25,7 @@ export abstract class ParserBase<Input, Identifier, Return, ParseNode> {
 
   /**
    * This method will be implemented by subclasses to provide a means by which
-   * the parser can check whether the item `ParseNode` at the current position 
+   * the parser can check whether the item `ParseNode` at the current position
    * can be identified by identifier `Identifier`
    *
    * @param identifier  A means by which the item `ParseNode` can be identified.

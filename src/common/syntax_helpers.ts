@@ -1,4 +1,5 @@
 import { TokenType } from "./enums";
+import { NumberRange } from "./types";
 
 export function isUpper(text: string): boolean {
   return text.toUpperCase() === text;
@@ -28,7 +29,7 @@ export function isModifier(tokenType: string): boolean {
 
 export function numberIsInRange(
   num: number,
-  range: [start: number, finish: number]
+  range: NumberRange
 ): boolean {
   if (range[0] < range[1]) {
     if (range[0] <= num && range[1] >= num) {

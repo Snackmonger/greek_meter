@@ -8,14 +8,14 @@ import {
   IGreekVowelData,
 } from "../../../common/interfaces/character";
 import { IToken } from "../../../common/interfaces/lexing";
-import { ParsingResult } from "../../../common/parser";
+import { ParsingResult } from "../../../common/parser.types";
 import {
   isAccent,
   isBreathing,
   isModifier,
   isUpper,
 } from "../../../common/syntax_helpers";
-import { CharacterParser } from "../character_parser";
+import { CharacterParser } from "../character/character_parser";
 import { TypeGreekBetacodeLexer } from "./typegreek.lexer";
 
 export class TypegreekBetacodeParser extends CharacterParser {
@@ -53,9 +53,9 @@ export class TypegreekBetacodeParser extends CharacterParser {
       }
     }
     if (this.hadError()) {
-      return { input: text, ok: false, error: this.errors };
+      return { ok: false, error: this.errors };
     }
-    return { input: text, ok: true, ast: characters };
+    return { ok: true, ast: characters };
   }
 
   /**

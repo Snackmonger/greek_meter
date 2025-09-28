@@ -19,7 +19,9 @@
  *
  *****************************************************************************/
 
+import { CharacterAnnotation } from "../enums";
 import { IToken } from "./lexing";
+
 
 /**
  * Interface for data of a spacing character.
@@ -41,7 +43,7 @@ export interface IGreekAlphabeticData {
   hasUnderdot?: boolean;
   // Annotation used to preserve data in the input that might not have a
   // representation in the output (e.g. variant character).
-  annotation?: object;
+  annotation?: CharacterAnnotation;
 }
 
 /**

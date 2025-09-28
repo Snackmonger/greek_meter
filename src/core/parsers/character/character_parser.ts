@@ -1,16 +1,15 @@
-import { TextSymbol } from "../../common/enums";
-import { IGreekCharacterNode } from "../../common/interfaces/character";
-import { IToken } from "../../common/interfaces/lexing";
-import { ParserBase, ParsingResult } from "../../common/parser";
+import { TextSymbol } from "../../../common/enums";
+import { IToken } from "../../../common/interfaces/lexing";
+import { ParserBase } from "../../../common/parser";
 
 /**
  * A subclass of `ParserBase` designed to parse string text into 
  * the `IGreekCharacterNode` intermediary representation.
  */
-export abstract class CharacterParser extends ParserBase<
+export abstract class CharacterParser<T> extends ParserBase<
   string,
   string,
-  ParsingResult<IGreekCharacterNode[]>,
+  T,
   IToken
 > {
   protected text: string = "";

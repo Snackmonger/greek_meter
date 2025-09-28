@@ -18,3 +18,4 @@ export class UnexpectedCharacterError extends Error {
 export class ParserError extends Error {
 
 }
+

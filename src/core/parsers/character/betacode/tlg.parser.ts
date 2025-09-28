@@ -9,15 +9,15 @@ import {
   IGreekVowelNode,
 } from "../../../common/interfaces/character";
 import { IToken } from "../../../common/interfaces/lexing";
-import { ParsingResult } from "../../../common/parser";
-import { CharacterParser } from "../character_parser";
+import { ParsingResult } from "../../../common/parser.types";
+import { CharacterParser } from "../character/character_parser";
 import { TlgBetacodeLexer } from "./tlg.lexer";
 
 /**
  * Parser-transformer that accepts the 'strict' form of beta code as used
  * by TLG and outputs a simple syntax tree representing the characters.
  */
-export class TlgBetacodeParser extends CharacterParser {
+export class TlgBetacodeParser extends CharacterParser<ParsingResult<IGreekCharacterNode[]>> {
   protected astNodeFactory: IGreekCharacterNodeFactory;
 
   /**
@@ -55,9 +55,9 @@ export class TlgBetacodeParser extends CharacterParser {
       }
     }
     if (this.hadError()) {
-      return { input: text, ok: false, error: this.errors };
+      return { ok: false, error: this.errors };
     }
-    return { input: text, ok: true, ast: characters };
+    return { ok: true, ast: characters };
   }
 
   /**
@@ -203,7 +203,7 @@ export class TlgBetacodeParser extends CharacterParser {
     }
     if (!this.matchVowel()) {
       this.consume(TokenType.ALPHA, "Expected a vowel");
-      return null
+      return null;
     }
     vowel = this.previous()!;
     if (this.match(TokenType.DIAERESIS, TokenType.SUBSCRIPT)) {

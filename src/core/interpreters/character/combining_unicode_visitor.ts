@@ -6,16 +6,14 @@ import {
   IGreekPunctuationData,
   IGreekSpaceData,
   IGreekVowelData,
-} from "../../../common/interfaces/prosody";
+} from "../../../common/interfaces/character";
 
 /**
- * Convert character intermediary nodes into Unicode Greek characters 
+ * Convert character intermediary nodes into Unicode Greek characters
  * with combining diacritics.
  */
 export class CombiningUnicodeVisitor implements IGreekCharacterNodeVisitor {
-  public visitGreekVowel(
-    node: IGreekVowelData & IGreekCharacterNode
-  ): string {}
+  public visitGreekVowel(node: IGreekVowelData & IGreekCharacterNode): string {}
   public visitGreekConsonant(
     node: IGreekAlphabeticData & IGreekCharacterNode
   ): string {}
@@ -25,7 +23,5 @@ export class CombiningUnicodeVisitor implements IGreekCharacterNodeVisitor {
   public visitGreekEditorialSymbol(
     node: IGreekEditorialSymbolData & IGreekCharacterNode
   ): string {}
-  public visitGreekSpace(
-    node: IGreekSpaceData & IGreekCharacterNode
-  ): string {}
+  public visitGreekSpace(node: IGreekSpaceData & IGreekCharacterNode): string {}
 }

@@ -1,30 +1,50 @@
-import { IGreekCharacterNode, IGreekProsodyNodeFactory } from "../../../common/interfaces/prosody";
-import { GreekLineNode } from "../../interpreters/prosody/prosody.nodes";
+import { IGreekCharacterNode } from "../../../common/interfaces/character";
+import {
+  IGreekLineData,
+  IGreekProsodyNode,
+  IGreekProsodyNodeFactory,
+} from "../../../common/interfaces/prosody";
+import { ParserBase } from "../../../common/parser";
+import { ParsingResult } from "../../../common/parser.types";
 
-export default class ProsodyParser {
-  private currentPosition: number;
-  private characters: IGreekCharacterNode[];
-  private errors: string[];
-  private astNodeFactory: IGreekProsodyNodeFactory
+export default class ProsodyParser extends ParserBase<
+  IGreekCharacterNode[],
+  IGreekProsodyNode,
+  ParsingResult<IGreekProsodyNode & IGreekLineData[]>,
+  IGreekCharacterNode
+> {
+  protected currentPosition: number;
+  protected characters: IGreekCharacterNode[];
+  protected errors: string[];
+  protected astNodeFactory: IGreekProsodyNodeFactory;
 
   constructor(astNodeFactory: IGreekProsodyNodeFactory) {
-    this.astNodeFactory = astNodeFactory
+    super();
+    this.astNodeFactory = astNodeFactory;
     this.currentPosition = 0;
     this.characters = [];
     this.errors = [];
   }
-
-  public parse(characters: IGreekCharacterNode[]): GreekLineNode[] {
-    return [];
+  protected check(identifier: IGreekProsodyNode): boolean {
+    
+    return true;
   }
 
-  private isAtEnd(): boolean {
+  protected makeErrorMsg(errorMsg: string): string {}
+
+  public parse(characters: IGreekCharacterNode[]): ParsingResult<IGreekProsodyNode & IGreekLineData[]> {
+
+
+    return {ok: false, error: []};
+  }
+
+  protected isAtEnd(): boolean {
     return this.currentPosition >= this.characters.length;
   }
 
-  private advance(): IGreekCharacterNode {
+  protected advance(): IGreekCharacterNode {
     let node = this.characters[this.currentPosition];
     this.currentPosition += 1;
-    return node
+    return node;
   }
 }
